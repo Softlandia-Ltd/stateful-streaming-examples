@@ -1,4 +1,5 @@
 """Example of stateful stream processing with Bytewax."""
+
 from datetime import timedelta
 import json
 
@@ -20,10 +21,10 @@ def deserialize(key_bytes__payload_bytes: tuple) -> tuple[str, dict]:
     return payload["id"], payload
 
 
-@plac.pos("addr", "Broker address")
-@plac.pos("topic", "Kafka topic")
+@plac.opt("addr", "Broker address")
+@plac.opt("topic", "Kafka topic")
 @plac.opt("win", "Window length in seconds")
-def main(addr: str, topic: str, win: int=10):
+def main(addr: str = "127.0.0.1:9092", topic: str = "iot", win: int = 10):
     """Run the stream processing flow."""
     clock_config = SystemClockConfig()
 
@@ -43,7 +44,7 @@ def main(addr: str, topic: str, win: int=10):
     # value
     flow.map(lambda x: (x[0], x[1]["value"]))
     # reduce each key according to our reducer function
-    flow.reduce_window("sum", clock_config, window_config, lambda x, y: x+y)
+    flow.reduce_window("sum", clock_config, window_config, lambda x, y: x + y)
     # flow.fold_window("running_average", clock_config, window_config, list, acc_values)
     flow.capture(StdOutputConfig())
 

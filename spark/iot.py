@@ -5,10 +5,10 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, window, from_unixtime, to_timestamp
 
 
-@plac.pos("addr", "Broker address")
-@plac.pos("topic", "Kafka topic")
+@plac.opt("addr", "Broker address")
+@plac.opt("topic", "Kafka topic")
 @plac.opt("win", "Window length in seconds")
-def main(addr: str, topic: str, win: int = 10):
+def main(addr: str = "127.0.0.1:9092", topic: str = "iot", win: int = 10):
     """Run the streaming program."""
     data_col = "data"
     ts_col = "ts"
@@ -48,8 +48,7 @@ def main(addr: str, topic: str, win: int = 10):
     ).sum("value")
 
     query = (
-        windowed_sum_df.writeStream.outputMode("update")
-        .format("console")
+        windowed_sum_df.writeStream.outputMode("update").format("console")
         # .trigger(processingTime=f"{win} seconds") # to reduce output spam
         .start()
     )

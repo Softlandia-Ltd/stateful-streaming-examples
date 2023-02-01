@@ -1,4 +1,5 @@
 """Example of stateful streaming with Flink."""
+
 import json
 
 import plac
@@ -8,10 +9,10 @@ from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitial
 from pyflink.datastream.window import TumblingProcessingTimeWindows
 
 
-@plac.pos("addr", "Broker address")
-@plac.pos("topic", "Kafka topic")
+@plac.opt("addr", "Broker address")
+@plac.opt("topic", "Kafka topic")
 @plac.opt("win", "Window length in seconds")
-def main(addr: str, topic: str, win: int = 10):
+def main(addr: str = "127.0.0.1:9092", topic: str = "iot", win: int = 10):
     """Analyze the Kafka stream."""
     env = StreamExecutionEnvironment.get_execution_environment()
 
@@ -38,8 +39,7 @@ def main(addr: str, topic: str, win: int = 10):
         # ...and collect each key into their Tumbling windows
         .window(TumblingProcessingTimeWindows.of(Time.seconds(win)))
         # ...which are reduced to the sum of value-fields inside each window
-        .reduce(lambda x, y: (x[0], x[1] + y[1]))
-        .print()
+        .reduce(lambda x, y: (x[0], x[1] + y[1])).print()
     )
 
     # submit for execution
