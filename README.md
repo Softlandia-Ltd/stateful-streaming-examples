@@ -102,7 +102,7 @@ We'll be using the Spark Structured Streaming tools. Dependencies are installed
 with 
 
 ```shell
-pip install -r flink/requirements.txt
+pip install -r spark/requirements.txt
 ```
 
 This will install PySpark and give you the `spark-submit` and `spark-shell`
