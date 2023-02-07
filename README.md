@@ -13,7 +13,7 @@ Here are the versions we tested:
 | Tool | Python version |
 | -- | -- |
 | Kafka | 3.11 |
-| Flink | 3.8 |
+| Flink | 3.9 |
 | Spark | 3.11 |
 | Bytewax | 3.10 |
 
