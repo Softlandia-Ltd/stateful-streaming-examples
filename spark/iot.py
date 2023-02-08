@@ -49,7 +49,6 @@ def main(addr: str = "127.0.0.1:9092", topic: str = "iot", win: int = 10):
 
     query = (
         windowed_sum_df.writeStream.outputMode("update").format("console")
-        # .trigger(processingTime=f"{win} seconds") # to reduce output spam
         .start()
     )
     query.awaitTermination()
