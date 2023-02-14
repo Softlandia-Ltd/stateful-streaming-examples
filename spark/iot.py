@@ -32,7 +32,7 @@ def main(addr: str = "127.0.0.1:9092", topic: str = "iot", win: int = 10):
         )
     )
 
-    # Unpack the JSON, discard the event time
+    # Unpack the JSON, transform event time to correct format
     value_df = json_df.select(
         col(f"{data_col}.id"),
         col(f"{data_col}.value"),
