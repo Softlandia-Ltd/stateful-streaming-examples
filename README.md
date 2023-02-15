@@ -119,3 +119,10 @@ With Spark, you should be mindful that the
 matches your Scala and Spark versions.
 
 Also, beware the log :) 
+
+## Outro
+
+You can read a more detailed evaluation of each technology here from our
+[blog](https://softlandia.fi/en/blog/real-time-data-processing-with-python-technology-evaluation)!
+
+[Softlandia.fi](https://softlandia.fi)
