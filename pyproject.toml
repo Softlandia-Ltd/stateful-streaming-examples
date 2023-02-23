@@ -1,0 +1,18 @@
+# DocAI 
+[project]
+name = "softlandia_stateful_streaming"
+version = "0.0.1"
+authors = [
+    {name = "Softlandia", email = "info@softlandia.fi"}
+]
+description = "Stateful streaming in Python"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy"
+]
+
+[build-system]
+requires = ["setuptools>=65.0"]
+build-backed = "setuptools.build_meta"
+

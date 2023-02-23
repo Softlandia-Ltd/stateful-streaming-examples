@@ -27,9 +27,9 @@ sensor values should sum to approximately the same values.
 
 ## How to use this repository
 
-Firstly, you should have a local Kafka instance, since the examples here don't
-support authentication to remote clusters. You may spin up a local cluster using
-the `docker-compose.yml` file in the `kafka` folder.
+Firstly, to run the IoT examples, you should have a local Kafka instance, since
+the examples here don't support authentication to remote clusters. You may spin
+up a local cluster using the `docker-compose.yml` file in the `kafka` folder.
 
 ```shell
 cd kafka
