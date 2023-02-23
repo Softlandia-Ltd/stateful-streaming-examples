@@ -1,5 +1,7 @@
 """Calculate the running average of a large dataset."""
 
+import time
+
 import plac
 import numpy as np
 from bytewax.dataflow import Dataflow
@@ -55,6 +57,7 @@ def reducer(session, array):
         session = (session[0], session[1], False)
     return session
 
+
 @plac.opt("rows", "Number of rows to generate")
 @plac.opt("cols", "Number of columns to generate")
 @plac.opt("ids", "Number of unique IDs to generate")
@@ -68,10 +71,11 @@ def main(rows: int=1000, cols: int=100, ids: int=5):
     # (id, (array, count, is_complete))
     flow.map(lambda x: (x[0], (x[1][0], 1, x[1][1])))
     flow.reduce("sum", reducer, is_complete)
-    # Remove the state from the output
-    flow.map(lambda x: (x[0], x[1][0], x[1][1]))
     flow.capture(StdOutputConfig())
+
+    start = time.time()
     run_main(flow)
+    print("Time taken: ", time.time() - start, "seconds")
 
 if __name__ == "__main__":
     plac.call(main)
