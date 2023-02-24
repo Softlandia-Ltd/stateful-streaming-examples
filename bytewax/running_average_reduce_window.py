@@ -1,14 +1,14 @@
 """Calculate the running average of a large dataset."""
 
 import time
-import queue
-from multiprocessing import Queue
+from datetime import timedelta
 
 import plac
 import numpy as np
 from bytewax.dataflow import Dataflow
 from bytewax.execution import run_main, spawn_cluster
 from bytewax.inputs import ManualInputConfig
+from bytewax.window import TumblingWindowConfig, SystemClockConfig
 from bytewax.outputs import ManualOutputConfig, StdOutputConfig
 
 from softlandia.stateful_streaming.dependencies import generate_data, cumulative_average
@@ -16,7 +16,6 @@ from softlandia.stateful_streaming.dependencies import generate_data, cumulative
 
 def get_input_builder(num_rows: int, num_cols: int, num_ids: int):
     """Generate an input_builder function with custom parameters."""
-    print("Building input builder")
 
     def input_builder(worker_index: int, worker_count: int, resume_state):
         """Build the input stream."""
@@ -24,41 +23,18 @@ def get_input_builder(num_rows: int, num_cols: int, num_ids: int):
         rows_per_worker = int(num_rows / worker_count)
         # We will yield data with (key, (value, is_complete)) tuples
         print("worker", worker_index, rows_per_worker)
-        # This way data is generated once the flow gets the run command. If
-        # generating earlier, must get it to correct processes once the flow
-        # starts.
         ids, data = generate_data(rows_per_worker, num_cols, num_ids)
 
         for i, id in enumerate(ids):
-            yield state, (id, data[i, :])
+            yield state, (id, (data[i, :], 1))
 
     return input_builder
 
 
-def output_builder(worker_index: int, worker_count: int):
-    """Build the output stream."""
-
-    print(f"Building output for worker {worker_index}")
-    f = open(f"output_{worker_index}.npy", "wb")
-
-    def update_result(item):
-        """Update the output dictionary."""
-        # print("output worker", worker_index)
-        # with open(f"output_{worker_index}.npy", "wb") as f:
-        np.save(f, item[1])
-
-    return update_result
-
-
-def builder():
-    """Build the new initial state."""
-    # Current average, numer of items
-    return (0, 0)
-
-
-def mapper(state, item):
+def reducer(state, array):
     """Map the value to the new state."""
-    return (cumulative_average(state[0], item[0], state[1]), state[1] + 1), item
+    new_count = state[1] + 1
+    return (cumulative_average(state[0], array[0], state[1]), new_count)
 
 
 @plac.opt("rows", "Number of rows to generate")
@@ -66,14 +42,17 @@ def mapper(state, item):
 @plac.opt("ids", "Number of unique IDs to generate")
 def main(rows: int = 1000, cols: int = 100, ids: int = 5):
     """Run the stream processing."""
+    # We can use a time-based window to collect all events and end the flow
+    # when there are no more events. It's a "trick" so that we don't have to
+    # keep track of when the items are done streaming. Just need to use a very
+    # large time window so that all data fits in.
+    clock_config = SystemClockConfig()
+    window_config = TumblingWindowConfig(length=timedelta(hours=2))
     flow = Dataflow()
     input_builder = get_input_builder(rows, cols, ids)
     flow.input("input", ManualInputConfig(input_builder))
-    # The stateful_map works very well for this use case, but it will emit the
-    # state after each update.
-    flow.stateful_map("cumulative_average", builder=builder, mapper=mapper)
-    flow.capture(ManualOutputConfig(output_builder))
-    # flow.capture(StdOutputConfig())
+    flow.reduce_window("reduce", clock_config, window_config, reducer)
+    flow.capture(StdOutputConfig())
 
     start = time.time()
     # run_main(flow)

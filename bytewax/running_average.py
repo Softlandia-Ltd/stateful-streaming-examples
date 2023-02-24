@@ -5,7 +5,7 @@ import time
 import plac
 import numpy as np
 from bytewax.dataflow import Dataflow
-from bytewax.execution import run_main
+from bytewax.execution import run_main, spawn_cluster
 from bytewax.inputs import ManualInputConfig
 from bytewax.outputs import StdOutputConfig
 
@@ -14,11 +14,11 @@ from softlandia.stateful_streaming.dependencies import generate_data, cumulative
 
 def get_input_builder(num_rows: int, num_cols: int, num_ids: int):
     """Generate an input_builder function with custom parameters."""
+    ids, data = generate_data(num_rows, num_cols, num_ids)
 
     def input_builder(worker_index: int, worker_count: int, resume_state):
         """Build the input stream."""
         state = None
-        ids, data = generate_data(num_rows, num_cols, num_ids)
         # We will yield data with (key, (value, is_complete)) tuples
         for i, id in enumerate(ids):
             yield state, (id, (data[i, :], True))
@@ -75,6 +75,7 @@ def main(rows: int=1000, cols: int=100, ids: int=5):
 
     start = time.time()
     run_main(flow)
+    # spawn_cluster(flow, proc_count=1, worker_count_per_proc=2)
     print("Time taken: ", time.time() - start, "seconds")
 
 if __name__ == "__main__":

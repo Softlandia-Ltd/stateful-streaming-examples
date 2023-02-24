@@ -64,6 +64,7 @@ Make a new virtual environment with Python version corresponding the above
 table. Then run
 
 ```shell
+pip install .
 pip install -r bytewax/requirements.txt
 python bytewax/iot.py
 ```
@@ -82,6 +83,7 @@ Note that we don't need any additional dependencies to run Bytewax locally.
 Make a new venv with the correct Python version and install PyFlink:
 
 ```shell
+pip install .
 pip install -r flink/requirements.txt
 python flink/iot.py
 ```
@@ -102,6 +104,7 @@ We'll be using the Spark Structured Streaming tools. Dependencies are installed
 with 
 
 ```shell
+pip install .
 pip install -r spark/requirements.txt
 ```
 
