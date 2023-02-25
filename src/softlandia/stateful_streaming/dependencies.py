@@ -9,11 +9,13 @@ def generate_data(num_rows: int=int(1e4), num_cols: int=int(1e2), num_ids: int=5
 
     The IDs can simulate different data sources, like sensors.
     """
+    rng = np.random.default_rng(0)
+
     # Generate a matrix with random values
-    matrix = np.random.randn(num_rows, num_cols)
+    matrix = rng.standard_normal((num_rows, num_cols))
 
     # Generate random IDs for each row
-    ids = np.random.randint(0, num_ids, size=num_rows).astype(str)
+    ids = rng.integers(low=0, high=num_ids, size=num_rows).astype(str)
 
     return ids, matrix
 

@@ -1,15 +1,12 @@
 """Example of stateful streaming with Flink."""
 
 import json
-from datetime import datetime
-import time
 
 import plac
 from pyflink.common import Time, WatermarkStrategy, SimpleStringSchema, Duration
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer
 from pyflink.datastream.window import (
-    TumblingProcessingTimeWindows,
     TumblingEventTimeWindows,
 )
 from pyflink.common.watermark_strategy import TimestampAssigner
