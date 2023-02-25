@@ -5,11 +5,11 @@ from typing import Tuple
 
 import plac
 from pyflink.common import Time, WatermarkStrategy, SimpleStringSchema, Duration
-from pyflink.datastream import StreamExecutionEnvironment
+from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode
+from pyflink.datastream.functions import KeyedProcessFunction
 from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer
 from pyflink.datastream import AggregateFunction
 from pyflink.datastream.window import (
-    TumblingProcessingTimeWindows,
     ProcessingTimeSessionWindows,
     CountTrigger,
 )
@@ -46,6 +46,21 @@ class AverageAggregate(AggregateFunction):
         # return a
 
 
+class CumulativeAverage(KeyedProcessFunction):
+
+    def __init__(self):
+        self.state = 0
+        self.count = 0
+
+    def open(self, parameters):
+        print("Opening")
+
+    def process_element(self, value, ctx: KeyedProcessFunction.Context):
+        self.state = cumulative_average(self.state, value[1], self.count)
+        self.count += 1
+        yield self.state, self.count
+
+
 @plac.opt("rows", "Number of rows to generate")
 @plac.opt("cols", "Number of columns to generate")
 @plac.opt("ids", "Number of unique IDs to generate")
@@ -54,13 +69,15 @@ def main(rows: int=1000, cols: int=100, ids: int=5):
     ids, data = generate_data(rows, cols, ids)
 
     env = StreamExecutionEnvironment.get_execution_environment()
+    env.set_runtime_mode(RuntimeExecutionMode.BATCH)
     (
         # Ingest from our collection. Docs say this will not support
         # parallelism.
         env.from_collection(list(zip(ids, data)))
         .key_by(lambda x: x[0])
-        .window(ProcessingTimeSessionWindows.with_gap(Time.milliseconds(500)))
-        .aggregate(AverageAggregate())
+        .process(CumulativeAverage())
+        # .window(ProcessingTimeSessionWindows.with_gap(Time.milliseconds(500)))
+        # .aggregate(AverageAggregate())
         .print()
     )
 

@@ -75,7 +75,6 @@ def main(rows: int=1000, cols: int=100, ids: int=5):
 
     start = time.time()
     run_main(flow)
-    # spawn_cluster(flow, proc_count=1, worker_count_per_proc=2)
     print("Time taken: ", time.time() - start, "seconds")
 
 if __name__ == "__main__":
