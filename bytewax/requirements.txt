@@ -16,3 +16,5 @@ tomli==2.0.1
 tomlkit==0.11.6
 typing_extensions==4.4.0
 wrapt==1.14.1
+orjson==3.10.1
+confluent-kafka==2.3.0
