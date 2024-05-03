@@ -45,7 +45,7 @@ def main(addr: str = "127.0.0.1:9092", topic: str = "iot", win: int = 10):
     flow = Dataflow("iot")
     # Input is our Kafka stream
     kinp = kop.input(
-        "input", flow, brokers=[addr], topics=[topic], tail=False)
+        "input", flow, brokers=[addr], topics=[topic], tail=True)
     errs = op.inspect("errors", kinp.errs).then(op.raises, "crash-on-err")
 
     # Extract dictionaries from JSON messages
