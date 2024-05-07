@@ -1,31 +1,33 @@
 """Example of stateful stream processing with Bytewax."""
 
 from datetime import timedelta, datetime, timezone
-import json
+import orjson as json
 
 import plac
+
 from bytewax.dataflow import Dataflow
-from bytewax.inputs import KafkaInputConfig
-from bytewax.outputs import StdOutputConfig
-from bytewax.execution import run_main
-from bytewax.window import TumblingWindowConfig, EventClockConfig
+import bytewax.operators as op
+from bytewax.operators.window import reduce_window, EventClockConfig, TumblingWindow
+from bytewax.connectors.kafka import KafkaSourceMessage
+from bytewax.connectors.kafka import operators as kop
+from bytewax.connectors.stdio import StdOutSink
+
+from bytewax.testing import run_main
 
 
-def deserialize(key_bytes__payload_bytes: tuple) -> tuple[str, dict]:
+def deserialize(msg: KafkaSourceMessage) -> tuple[str, dict]:
     """Deserialize Kafka messages.
 
     Will return tuples of (id, msg).
     """
-    _key_bytes, payload_bytes = key_bytes__payload_bytes
-    payload = json.loads(payload_bytes.decode("utf-8"))
-    return payload["id"], payload
+    payload = json.loads(msg.value.decode("utf-8"))
+    return payload
 
 
 def get_event_time(event):
     """Extract event-time from data."""
     # Remember timezone info!
     return datetime.fromtimestamp(event["time"], timezone.utc)
-
 
 @plac.opt("addr", "Broker address")
 @plac.opt("topic", "Kafka topic")
@@ -35,30 +37,34 @@ def main(addr: str = "127.0.0.1:9092", topic: str = "iot", win: int = 10):
     # We want to do windowing based on event times!
     clock_config = EventClockConfig(get_event_time, timedelta(milliseconds=500))
 
+    align_to = datetime(2023, 1, 1, tzinfo=timezone.utc)
     # We'll operate in 10 second windows
-    window_config = TumblingWindowConfig(length=timedelta(seconds=win))
+    window_config = TumblingWindow(align_to=align_to, length=timedelta(seconds=win))
 
     # Initialize a flow
-    flow = Dataflow()
+    flow = Dataflow("iot")
     # Input is our Kafka stream
-    flow.input(
-        "input",
-        KafkaInputConfig(brokers=[addr], topic=topic, tail=True, starting_offset="end"),
-    )
+    kinp = kop.input(
+        "input", flow, brokers=[addr], topics=[topic], tail=True)
+    errs = op.inspect("errors", kinp.errs).then(op.raises, "crash-on-err")
+
     # Extract dictionaries from JSON messages
-    flow.map(deserialize)
+    stream = op.map("serde", kinp.oks, deserialize)
     # Extract (key, value) pairs with the data we want to operate on as the
     # value
-    flow.map(lambda x: (x[0], x[1]))
+    keyed_stream = op.key_on("key", stream, lambda x: str(x['id']))
+
     # reduce each key according to our reducer function, bytewax will pass only
     # the values to the reduce function. Since we output dicts from the
     # previous map, we need to output dicts from the reducer
-    flow.reduce_window(
-            "sum", clock_config, window_config, lambda x, y: {"value": x["value"] + y["value"]}
+    windowed_stream = reduce_window(
+            "sum",keyed_stream, clock_config, window_config, lambda x, y: {"value": x["value"] + y["value"]}
     )
-    flow.capture(StdOutputConfig())
+
+    op.output("print", windowed_stream, StdOutSink())
 
     run_main(flow)
+
 
 
 if __name__ == "__main__":
